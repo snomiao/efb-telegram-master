@@ -31,6 +31,7 @@ from ehforwarderbot.status import ReactToMessage
 from ehforwarderbot.types import ModuleID, InstanceID, MessageID, ReactionName, ChatID
 from . import utils as etm_utils
 from .__version__ import __version__
+from .auto_tg_manager import AutoTGManager
 from .bot_manager import TelegramBotManager
 from .chat_binding import ChatBindingManager
 from .chat_destination_cache import ChatDestinationCache
@@ -127,6 +128,7 @@ class TelegramChannel(MasterChannel):
         self.bot_manager: TelegramBotManager = TelegramBotManager(self)
         self.commands: CommandsManager = CommandsManager(self)
         self.chat_binding: ChatBindingManager = ChatBindingManager(self)
+        self.auto_tg_manager: AutoTGManager = AutoTGManager(self)
         self.slave_messages: SlaveMessageProcessor = SlaveMessageProcessor(self)
 
         if not self.flag('auto_locale'):

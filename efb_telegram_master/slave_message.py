@@ -26,7 +26,7 @@ from ehforwarderbot.constants import MsgType
 from ehforwarderbot.message import LinkAttribute, LocationAttribute, MessageCommand, Reactions, \
     StatusAttribute
 from ehforwarderbot.status import ChatUpdates, MemberUpdates, MessageRemoval, MessageReactionsUpdate
-from . import utils
+from . import utils, AutoTGManager
 from .chat_destination_cache import ChatDestinationCache
 from .chat_object_cache import ChatObjectCacheManager
 from .commands import ETMCommandMsgStorage
@@ -53,6 +53,7 @@ class SlaveMessageProcessor(LocaleMixin):
         self.db: 'DatabaseManager' = channel.db
         self.chat_dest_cache: ChatDestinationCache = channel.chat_dest_cache
         self.chat_manager: ChatObjectCacheManager = channel.chat_manager
+        self.auto_tg_manager: AutoTGManager = channel.auto_tg_manager
 
     def is_silent(self, msg: Message) -> Optional[bool]:
         """Determine if a message shall be sent silently.
@@ -242,6 +243,8 @@ class SlaveMessageProcessor(LocaleMixin):
 
         if tg_chats:
             tg_chat = tg_chats[0]
+        else:
+            tg_chat = self.auto_tg_manager.create_tg_group_if_needed(msg.chat)
         self.logger.debug("[%s] The message should deliver to %s", xid, tg_chat)
 
         singly_linked = True
