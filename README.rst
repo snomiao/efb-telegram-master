@@ -565,6 +565,85 @@ e.g.:
     Enable this option if the bot API is running in ``--local`` mode and
     is using the same file system with ETM.
 
+-   ``auto_manage_tg_config`` *(dict)* [Default: ``dict()``]
+
+    This contains the auto_tg_config.
+    Options in this section is explained afterward.
+
+
+AutoTGManagerConfig
+-------------------------------------
+This is config of AutoTGManager, which can automatically create TG group for you.
+The AutoTGManager is typically a TG client that can do anything like you.
+The AutoTGManager uses pyrogram to simulate a TG Client.
+You need to input your password or any login method your TG account use at the first time you use it.
+
+We use ``int`` to indicate the group type of your chat, e.g.:
+ChatType:
+-   1: Private Chat
+-   2: Group Chat
+-   3: System Chat
+-   4: MQ Chat
+
+The following flags are experimental features, may change, break, or
+disappear at any time. Use at your own risk.
+
+These flags can be enabled in the ``flags.auto_manage_tg_config`` key of the configuration file, e.g.:
+
+-   ``auto_manage_tg`` *(bool)* [Default: ``false``]
+    Enable this option if you want to use AutoTGManager.
+
+-   ``tg_api_id`` *(str)* [Default: ``null``]
+    This is your Telegram API key ID.
+    Get your own Telegram API key from https://my.telegram.org/apps.
+
+-   ``tg_api_hash`` *(str)* [Default: ``null``]
+    This is your Telegram API key hash.
+    Get your own Telegram API key from https://my.telegram.org/apps.
+
+-   ``auto_create_tg_group`` *(list[ChatType])*
+    This list contains chat_types which you want AutoTGManager to automatically create TG group for you.
+
+-   ``auto_mute_created_tg_group`` *(list[ChatType])*
+    After AutoTGManager creates TG group, it can mute the group for you if you specify the type in this list.
+
+-   ``auto_add_group_to_folder`` *(dict[ChatType, str])*
+    This dict contains names of your TG folder.
+    After AutoTGManager creates TG group, it can add the group to the folder if you specify the type in this list.
+
+-   ``auto_archive_create_tg_group`` *(list[ChatType])*
+    After AutoTGManager creates TG group, it can archive the group if you specify the type in this list.
+
+-   ``mq_auto_link_group_id`` *(str)*
+    You can link all MQ Chat to one TG Group. This is the group id.
+
+Config Example:
+
+::
+
+    flags:
+      auto_manage_tg_config:
+        # Enable AutoTGManager
+        auto_manage_tg: true
+        # Telegram API key ID
+        tg_api_id: 12345
+        # Telegram API key Hash
+        tg_api_hash: xxxxxxxxxxxxxxxxxxxxxxxxx
+        # automatically create TG group for private and group chat
+        auto_create_tg_group: [1, 2]
+        # automatically mute TG groups for group chat
+        auto_mute_created_tg_group: [2]
+        # automatically add those TG groups to those folders
+        auto_add_group_to_folder:
+          1: 微信
+          2: 微信-群
+          3: 微信-系统
+          4: 微信-公众号
+        # automatically archive TG groups for group and system and MQ chat
+        auto_archive_create_tg_group: [2, 3, 4]
+        # automatically link MQ chat to this TG group
+        mq_auto_link_group_id: xxxxxxxx
+
 Network configuration: timeout tweaks
 -------------------------------------
 

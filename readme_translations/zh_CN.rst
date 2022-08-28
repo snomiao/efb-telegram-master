@@ -529,6 +529,88 @@ ETM 不能：
   is using the same file system with ETM.
 
 
+-   ``auto_manage_tg_config`` *(dict)* [Default: ``dict()``]
+
+    这是AutoTGManager的配置部分。下文会详细说明。
+
+
+AutoTGManagerConfig
+-------------------------------------
+这是 AutoTGManager 的配置部分。
+AutoTGManager 可以帮你自动创建 TG 群组。
+AutoTGManager 其实就是一个使用 pyrogram 实现的 TG 客户端。模拟了你的登录，能实现几乎任何功能。
+第一次使用时，你需要输入你 TG 的密码，5位登录码等。
+
+我们使用数字来规定对话类型:
+ChatType:
+-   1: 私聊
+-   2: 群聊
+-   3: 系统消息
+-   4: 公众号消息
+
+这些字段在配置文件的 ``flags.auto_manage_tg_config`` 字段中：
+
+-   ``auto_manage_tg`` *(bool)* [Default: ``false``]
+
+    AutoTGManager 的总开关
+
+-   ``tg_api_id`` *(str)* [Default: ``null``]
+
+    这是你的 Telegram API key ID.
+    点击链接 https://my.telegram.org/apps ，获取你的 Telegram API key
+
+-   ``tg_api_hash`` *(str)* [Default: ``null``]
+
+    这是你的 Telegram API key hash.
+    点击链接 https://my.telegram.org/apps ，获取你的 Telegram API key
+
+-   ``auto_create_tg_group`` *(list[ChatType])*
+
+    ChatType的数组，AutoTGManager 会给对应类型自动创建 TG 群
+
+-   ``auto_mute_created_tg_group`` *(list[ChatType])*
+
+    ChatType的数组，AutoTGManager 会将对应类型自动创建的 TG 群禁止通知
+
+-   ``auto_add_group_to_folder`` *(dict[ChatType, str])*
+
+    [ChatType: 分组名称]，AutoTGManager 会将对应类型自动创建的 TG 群加入到对应分组中。（需要先手动创建对应分组）
+
+-   ``auto_archive_create_tg_group`` *(list[ChatType])*
+
+    ChatType的数组，AutoTGManager 会将对应类型自动创建的 TG 群归档
+
+-   ``mq_auto_link_group_id`` *(str)*
+
+    TG 群ID。如果没有启用公众号的自动创建群，AutoTGManager 会将公众号自动绑定到该 TG 群。（需要先手动绑定过该群）
+
+配置示例：
+
+::
+
+    flags:
+      auto_manage_tg_config:
+        # 启用 AutoTGManager
+        auto_manage_tg: true
+        # Telegram API key ID
+        tg_api_id: 12345
+        # Telegram API key Hash
+        tg_api_hash: xxxxxxxxxxxxxxxxxxxxxxxxx
+        # 为私聊、群聊类型自动创建 TG 群
+        auto_create_tg_group: [1, 2]
+        # 自动创建的群聊类型的 TG 群，默认禁止通知
+        auto_mute_created_tg_group: [2]
+        # 自动将对应类型加入到对应 TG 分组
+        auto_add_group_to_folder:
+          1: 微信
+          2: 微信-群
+          3: 微信-系统
+          4: 微信-公众号
+        # 将群聊、系统消息、公众号，自动创建的 TG 群归档
+        auto_archive_create_tg_group: [2, 3, 4]
+        # 自动将公众号绑定到该 TG 群
+        mq_auto_link_group_id: xxxxxxxx
+
 网络配置：超时调整
 ==================
 
