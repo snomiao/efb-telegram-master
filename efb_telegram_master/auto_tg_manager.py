@@ -34,29 +34,34 @@ class AutoTGManager(LocaleMixin):
         self.db: 'DatabaseManager' = channel.db
 
         self.tg_config: dict = self.flag('auto_manage_tg_config')
-        if self.tg_config['auto_manage_tg']:
+        if self.tg_config.get('auto_manage_tg') and \
+                self.tg_config.get('tg_api_id') and \
+                self.tg_config.get('tg_api_hash'):
             self.tg_client = pyrogram.Client(name='efb_telegram_auto_create_group_client',
-                                             api_id=self.tg_config['tg_api_id'],
-                                             api_hash=self.tg_config['tg_api_hash'])
+                                             api_id=self.tg_config.get('tg_api_id'),
+                                             api_hash=self.tg_config.get('tg_api_hash'))
             self.tg_loop = asyncio.new_event_loop()
 
     def create_tg_group_if_needed(self, chat: ETMChatType) -> Optional[utils.EFBChannelChatIDStr]:
-        if not self.tg_config['auto_manage_tg'] or not self.tg_client:
+        if not self.tg_client:
             return None
 
-        if chat.vendor_specific['is_mp'] and self.tg_config['mq_auto_link_group_id']:
+        auto_create_types = self.tg_config.get('auto_create_tg_group', [])
+        if chat.vendor_specific.get('is_mp') and self.tg_config.get('mq_auto_link_group_id'):
             # 公众号绑定到同一个 TG 群
-            mq_tg_group_id: str = self.tg_config['mq_auto_link_group_id']
+            mq_tg_group_id = str(self.tg_config.get('mq_auto_link_group_id', ''))
             if not mq_tg_group_id or not len(mq_tg_group_id):
                 return None
             chat.link(self.channel.channel_id, mq_tg_group_id, True)
             tg_chats = self.db.get_chat_assoc(slave_uid=utils.chat_id_to_str(chat_uid=mq_tg_group_id))
-            assert len(tg_chats) == 1
-            return tg_chats[0]
-        elif (chat.vendor_specific['is_mp'] and 4 in self.tg_config['auto_create_tg_group']) or \
-                (isinstance(chat, ETMPrivateChat) and 1 in self.tg_config['auto_create_tg_group']) or \
-                (isinstance(chat, ETMGroupChat) and 2 in self.tg_config['auto_create_tg_group']) or \
-                (isinstance(chat, ETMSystemChat) and 3 in self.tg_config['auto_create_tg_group']):
+            if len(tg_chats) == 1:
+                return tg_chats[0]
+            else:
+                self.logger.debug('could not find TG group with mq_auto_link_group_id')
+        elif (chat.vendor_specific.get('is_mp') and 4 in auto_create_types) or \
+                (isinstance(chat, ETMPrivateChat) and 1 in auto_create_types) or \
+                (isinstance(chat, ETMGroupChat) and 2 in auto_create_types) or \
+                (isinstance(chat, ETMSystemChat) and 3 in auto_create_types):
             # 自动创建 TG 群
             return self._create_tg_group(chat)
 
@@ -133,10 +138,10 @@ class AutoTGManager(LocaleMixin):
 
     async def _add_tg_group_to_folder_if_needed(self, chat: ETMChatType, tg_chat: pyrogram.types.Chat):
         try:
-            folder_config: dict = self.tg_config['auto_add_group_to_folder']
+            folder_config = self.tg_config.get('auto_add_group_to_folder', {})
             if not folder_config:
                 return
-            folders: list[pyrogram.raw.base.DialogFilter] = await self.tg_client.invoke(
+            folders: List[pyrogram.raw.base.DialogFilter] = await self.tg_client.invoke(
                 pyrogram.raw.functions.messages.GetDialogFilters())
 
             def get_target_folder(title: str) -> Optional[pyrogram.raw.types.DialogFilter]:
@@ -147,7 +152,7 @@ class AutoTGManager(LocaleMixin):
                 return None
 
             target_folder = Optional[pyrogram.raw.base.DialogFilter]
-            if chat.vendor_specific['is_mp'] and folder_config[4]:
+            if chat.vendor_specific.get('is_mp') and folder_config[4]:
                 target_folder = get_target_folder(folder_config[4])
             elif isinstance(chat, ETMPrivateChat) and folder_config[1]:
                 target_folder = get_target_folder(folder_config[1])
@@ -184,7 +189,7 @@ class AutoTGManager(LocaleMixin):
 
     def _array_config_contains_chat_type(self, config_name: str, chat: ETMChatType) -> bool:
         config = self.tg_config.get(config_name, [])
-        if (chat.vendor_specific['is_mp'] and 4 in config) or \
+        if (chat.vendor_specific.get('is_mp') and 4 in config) or \
                 (isinstance(chat, ETMPrivateChat) and 1 in config) or \
                 (isinstance(chat, ETMGroupChat) and 2 in config) or \
                 (isinstance(chat, ETMSystemChat) and 3 in config):
