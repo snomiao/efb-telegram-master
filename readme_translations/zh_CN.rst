@@ -543,6 +543,7 @@ AutoTGManager 其实就是一个使用 pyrogram 实现的 TG 客户端。模拟�
 
 我们使用数字来规定对话类型:
 ChatType:
+
 -   1: 私聊
 -   2: 群聊
 -   3: 系统消息
@@ -609,7 +610,7 @@ ChatType:
         # 将群聊、系统消息、公众号，自动创建的 TG 群归档
         auto_archive_create_tg_group: [2, 3, 4]
         # 自动将公众号绑定到该 TG 群
-        mq_auto_link_group_id: xxxxxxxx
+        mq_auto_link_group_id: '-xxxxxxxx'
 
 网络配置：超时调整
 ==================

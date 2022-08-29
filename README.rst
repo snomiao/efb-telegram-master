@@ -580,6 +580,7 @@ You need to input your password or any login method your TG account use at the f
 
 We use ``int`` to indicate the group type of your chat, e.g.:
 ChatType:
+
 -   1: Private Chat
 -   2: Group Chat
 -   3: System Chat
@@ -642,7 +643,7 @@ Config Example:
         # automatically archive TG groups for group and system and MQ chat
         auto_archive_create_tg_group: [2, 3, 4]
         # automatically link MQ chat to this TG group
-        mq_auto_link_group_id: xxxxxxxx
+        mq_auto_link_group_id: '-xxxxxxxx'
 
 Network configuration: timeout tweaks
 -------------------------------------
