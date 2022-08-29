@@ -41,6 +41,7 @@ class AutoTGManager(LocaleMixin):
                                              api_id=self.tg_config.get('tg_api_id'),
                                              api_hash=self.tg_config.get('tg_api_hash'))
             self.tg_loop = asyncio.new_event_loop()
+            self.tg_loop.run_until_complete(self._start_tg_client_if_needed())
 
     def create_tg_group_if_needed(self, chat: ETMChatType) -> Optional[utils.EFBChannelChatIDStr]:
         if not self.tg_client:
@@ -119,8 +120,7 @@ class AutoTGManager(LocaleMixin):
     async def _async_create_tg_group(self, chat: ETMChatType) -> pyrogram.types.Chat:
         tg_chat = None
         try:
-            if not self.tg_client.is_connected:
-                await self.tg_client.start()
+            await self._start_tg_client_if_needed()
             tg_chat = await self.tg_client.create_group(chat.chat_title, self.bot.me.id)
             bot = await self.tg_client.resolve_peer(self.bot.me.id)
             _raw_chat = await self.tg_client.resolve_peer(tg_chat.id)
@@ -135,6 +135,10 @@ class AutoTGManager(LocaleMixin):
         except Exception:
             self.logger.exception("Unknown error caught when creating TG group.")
         return tg_chat
+
+    async def _start_tg_client_if_needed(self):
+        if not self.tg_client.is_connected:
+            await self.tg_client.start()
 
     async def _add_tg_group_to_folder_if_needed(self, chat: ETMChatType, tg_chat: pyrogram.types.Chat):
         try:
