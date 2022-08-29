@@ -4,6 +4,7 @@ from typing import Tuple, Optional, TYPE_CHECKING, List, IO, Union
 import asyncio
 import logging
 
+import ehforwarderbot
 import pyrogram
 from PIL import Image
 from ehforwarderbot import coordinator
@@ -39,7 +40,8 @@ class AutoTGManager(LocaleMixin):
                 self.tg_config.get('tg_api_hash'):
             self.tg_client = pyrogram.Client(name='efb_telegram_auto_create_group_client',
                                              api_id=self.tg_config.get('tg_api_id'),
-                                             api_hash=self.tg_config.get('tg_api_hash'))
+                                             api_hash=self.tg_config.get('tg_api_hash'),
+                                             workdir=ehforwarderbot.utils.get_data_path(channel.channel_id))
             self.tg_loop = asyncio.new_event_loop()
             self.tg_loop.run_until_complete(self._start_tg_client_if_needed())
 
@@ -71,6 +73,8 @@ class AutoTGManager(LocaleMixin):
     def _create_tg_group(self, chat: ETMChatType) -> utils.EFBChannelChatIDStr:
         try:
             tg_chat = self.tg_loop.run_until_complete(self._async_create_tg_group(chat))
+            if not tg_chat:
+                return None
             self.logger.debug("Auto create telegram Group Named: [%s]", tg_chat.title)
             chat.link(self.channel.channel_id, tg_chat.id, True)
             self._update_chat_image(tg_chat)
@@ -121,14 +125,15 @@ class AutoTGManager(LocaleMixin):
         tg_chat = None
         try:
             await self._start_tg_client_if_needed()
-            tg_chat = await self.tg_client.create_group(chat.chat_title, self.bot.me.id)
+            _tg_chat = await self.tg_client.create_group(chat.chat_title, self.bot.me.id)
             bot = await self.tg_client.resolve_peer(self.bot.me.id)
-            _raw_chat = await self.tg_client.resolve_peer(tg_chat.id)
+            _raw_chat = await self.tg_client.resolve_peer(_tg_chat.id)
             await self.tg_client.invoke(
                 pyrogram.raw.functions.messages.EditChatAdmin(
                     chat_id=_raw_chat.chat_id,
                     user_id=bot,
                     is_admin=True))
+            tg_chat = _tg_chat
             await self._add_tg_group_to_folder_if_needed(chat, tg_chat)
             await self._archive_tg_chat_if_needed(chat, tg_chat)
             await self._mute_tg_group_if_needed(chat, tg_chat)
