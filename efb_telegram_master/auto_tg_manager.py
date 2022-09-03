@@ -44,31 +44,28 @@ class AutoTGManager(LocaleMixin):
                                              workdir=ehforwarderbot.utils.get_data_path(channel.channel_id))
             self.tg_loop = asyncio.new_event_loop()
             self.tg_loop.run_until_complete(self._start_tg_client_if_needed())
+            self.tg_loop.run_until_complete(self._stop_tg_client())
 
     def create_tg_group_if_needed(self, chat: ETMChatType) -> Optional[utils.EFBChannelChatIDStr]:
         if not self.tg_client:
             return None
 
-        auto_create_types = self.tg_config.get('auto_create_tg_group', [])
         if chat.vendor_specific.get('is_mp') and self.tg_config.get('mq_auto_link_group_id'):
             # 公众号绑定到同一个 TG 群
             mq_tg_group_id = str(self.tg_config.get('mq_auto_link_group_id', ''))
             if not mq_tg_group_id or not len(mq_tg_group_id):
                 return None
             chat.link(self.channel.channel_id, mq_tg_group_id, True)
-            tg_chats = self.db.get_chat_assoc(slave_uid=utils.chat_id_to_str(chat_uid=mq_tg_group_id))
+            tg_chats = self.db.get_chat_assoc(master_uid=utils.chat_id_to_str(chat_uid=mq_tg_group_id))
             if len(tg_chats) == 1:
                 return tg_chats[0]
             else:
                 self.logger.debug('could not find TG group with mq_auto_link_group_id')
-        elif (chat.vendor_specific.get('is_mp') and 4 in auto_create_types) or \
-                (isinstance(chat, ETMPrivateChat) and 1 in auto_create_types) or \
-                (isinstance(chat, ETMGroupChat) and 2 in auto_create_types) or \
-                (isinstance(chat, ETMSystemChat) and 3 in auto_create_types):
+        elif self._array_config_contains_chat_type('auto_create_tg_group', chat):
             # 自动创建 TG 群
             return self._create_tg_group(chat)
-
-        return None
+        else:
+            return None
 
     def _create_tg_group(self, chat: ETMChatType) -> utils.EFBChannelChatIDStr:
         try:
@@ -83,7 +80,6 @@ class AutoTGManager(LocaleMixin):
             return tg_chats[0]
         except Exception:
             self.logger.exception("Unknown error caught when creating TG group.")
-        finally:
             return None
 
     def _update_chat_image(self, tg_chat: pyrogram.types.Chat):
@@ -121,29 +117,33 @@ class AutoTGManager(LocaleMixin):
             if pic_resized and getattr(pic_resized, 'close', None):
                 pic_resized.close()
 
-    async def _async_create_tg_group(self, chat: ETMChatType) -> pyrogram.types.Chat:
-        tg_chat = None
+    async def _async_create_tg_group(self, chat: ETMChatType) -> Optional[pyrogram.types.Chat]:
         try:
             await self._start_tg_client_if_needed()
-            _tg_chat = await self.tg_client.create_group(chat.chat_title, self.bot.me.id)
+            tg_chat = await self.tg_client.create_group(chat.chat_title, self.bot.me.id)
             bot = await self.tg_client.resolve_peer(self.bot.me.id)
-            _raw_chat = await self.tg_client.resolve_peer(_tg_chat.id)
+            _raw_chat = await self.tg_client.resolve_peer(tg_chat.id)
             await self.tg_client.invoke(
                 pyrogram.raw.functions.messages.EditChatAdmin(
                     chat_id=_raw_chat.chat_id,
                     user_id=bot,
                     is_admin=True))
-            tg_chat = _tg_chat
             await self._add_tg_group_to_folder_if_needed(chat, tg_chat)
             await self._archive_tg_chat_if_needed(chat, tg_chat)
             await self._mute_tg_group_if_needed(chat, tg_chat)
+            await self._stop_tg_client()
+            return tg_chat
         except Exception:
             self.logger.exception("Unknown error caught when creating TG group.")
-        return tg_chat
+            return None
 
     async def _start_tg_client_if_needed(self):
         if not self.tg_client.is_connected:
             await self.tg_client.start()
+
+    async def _stop_tg_client(self):
+        if self.tg_client.is_connected:
+            await self.tg_client.stop()
 
     async def _add_tg_group_to_folder_if_needed(self, chat: ETMChatType, tg_chat: pyrogram.types.Chat):
         try:
