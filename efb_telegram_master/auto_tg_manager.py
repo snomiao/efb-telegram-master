@@ -1,4 +1,6 @@
-# coding=utf-8
+# coding=utf-8 
+import nest_asyncio
+nest_asyncio.apply()
 import io
 from typing import Tuple, Optional, TYPE_CHECKING, List, IO, Union
 import asyncio
