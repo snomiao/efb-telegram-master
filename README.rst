@@ -45,6 +45,9 @@ Getting Started
    .. code:: shell
 
        pip3 install efb-telegram-master
+       # from this repo
+       https://github.com/snomiao/efb-telegram-master
+       
 
 3. Enable and configure ETM using the *EFB configuration wizard*, or enable
    it manually in the profile’s ``config.yaml``.
