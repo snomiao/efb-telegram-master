@@ -1,4 +1,4 @@
-# coding=utf-8 
+# coding=utf-8
 import nest_asyncio
 nest_asyncio.apply()
 import io
@@ -122,6 +122,7 @@ class AutoTGManager(LocaleMixin):
     async def _async_create_tg_group(self, chat: ETMChatType) -> Optional[pyrogram.types.Chat]:
         try:
             await self._start_tg_client_if_needed()
+            # - [create_group() — Pyrogram Documentation]( https://docs.pyrogram.org/api/methods/create_group )
             tg_chat = await self.tg_client.create_group(chat.chat_title, self.bot.me.id)
             bot = await self.tg_client.resolve_peer(self.bot.me.id)
             _raw_chat = await self.tg_client.resolve_peer(tg_chat.id)
@@ -155,14 +156,20 @@ class AutoTGManager(LocaleMixin):
             folders: List[pyrogram.raw.base.DialogFilter] = await self.tg_client.invoke(
                 pyrogram.raw.functions.messages.GetDialogFilters())
 
-            def get_target_folder(title: str) -> Optional[pyrogram.raw.types.DialogFilter]:
+            def get_target_folder(title: str) -> Optional[pyrogram.raw.types.DialogFilter] | Optional[pyrogram.raw.types.DialogFilterChatlist]:
                 result = list(
-                    filter(lambda x: isinstance(x, pyrogram.raw.types.DialogFilter) and x.title == title, folders))
+                    filter(
+                        lambda x:
+                        (isinstance(x, pyrogram.raw.types.DialogFilter) or
+                         isinstance(x, pyrogram.raw.types.DialogFilterChatlist
+                                    )) and x.title == title,
+                        folders,
+                    ))
                 if len(result) == 1:
                     return result[0]
                 return None
 
-            target_folder = Optional[pyrogram.raw.base.DialogFilter]
+            target_folder = Optional[pyrogram.raw.base.DialogFilter] # | Optional[pyrogram.raw.types.DialogFilterChatlist]
             if chat.vendor_specific.get('is_mp') and folder_config[4]:
                 target_folder = get_target_folder(folder_config[4])
             elif isinstance(chat, ETMPrivateChat) and folder_config[1]:
